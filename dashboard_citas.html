@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMS Citas - BDC / Call Center</title>
+
+    <link rel="stylesheet" href="css/global.css">
+
+    <!-- Librerías Externas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <style>
+        /* Estilos específicos para los KPI Diarios estilo Glass */
+        .kpi-container {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .kpi-card {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.7);
+            border: 1px solid var(--glass-border);
+            padding: 15px;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .kpi-title {
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 800;
+            color: var(--primary-color);
+        }
+
+        .kpi-card.highlight {
+            border-bottom: 4px solid var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout" id="appLayout">
+        <!-- BARRA LATERAL IZQUIERDA -->
+        <aside class="sidebar glass-card">
+            <div>
+                <div class="brand-logo" id="uiBrandName">DMS CITAS</div>
+                <div class="nav-menu">
+                    <div class="nav-item active">📅 Agendar Cita</div>
+                    <div class="nav-item" id="btnPrepicking">🖨️ Generar Pre-picking</div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <p style="font-weight: bold; margin-bottom: 5px;">Área: BDC / Citas</p>
+                <a href="index.html" style="color: #ef4444; text-decoration: none; font-weight: 600;"
+                    onclick="localStorage.clear()">Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content glass-card">
+
+            <!-- KPI DIARIO (Monitor) -->
+            <div class="kpi-container">
+                <div class="kpi-card highlight">
+                    <span class="kpi-title">Citas Agendadas Hoy</span>
+                    <span class="kpi-value" id="kpiCitasHoy">0</span>
+                </div>
+                <div class="kpi-card" style="border-bottom: 4px solid #16a34a;">
+                    <span class="kpi-title">Mantenimientos</span>
+                    <span class="kpi-value" style="color:#16a34a;" id="kpiMantenimientos">0</span>
+                </div>
+                <div class="kpi-card" style="border-bottom: 4px solid #d97706;">
+                    <span class="kpi-title">Diagnósticos</span>
+                    <span class="kpi-value" style="color:#d97706;" id="kpiDiagnosticos">0</span>
+                </div>
+            </div>
+
+            <h2>Agendar Nuevo Servicio</h2>
+            <p class="subtitle" id="uiSubtitle">Gestión exclusiva de citas para marca activa.</p>
+
+            <form id="citaForm" class="form-grid">
+                <div class="form-group full-width"><label>Nombre Completo</label><input type="text" id="nombreCliente"
+                        required></div>
+                <div class="form-group"><label>VIN (17 caracteres)</label><input type="text" id="vin" minlength="17"
+                        maxlength="17" pattern=".{17,17}" required style="text-transform: uppercase;"></div>
+                <div class="form-group"><label>WhatsApp (10 Dígitos)</label><input type="tel" id="telefono"
+                        minlength="10" maxlength="10" pattern="\d{10}" required></div>
+                <div class="form-group"><label>Teléfono Alternativo (Opcional)</label><input type="tel" id="telefonoAlt"
+                        minlength="10" maxlength="10" pattern="\d{10}"></div>
+                <div class="form-group"><label>Modelo Vehículo</label><select id="modeloVehiculo" required>
+                        <option value="">Seleccione...</option>
+                    </select></div>
+
+                <!-- TIPO DE SERVICIO (Controla qué campo se muestra) -->
+                <div class="form-group">
+                    <label>Tipo de Ingreso</label>
+                    <select id="tipoServicio" required>
+                        <option value="Mantenimiento">Mantenimiento Preventivo (Kilometrado)</option>
+                        <option value="Diagnostico">Diagnóstico / Reparación (Falla)</option>
+                    </select>
+                </div>
+
+                <!-- CAJA KILOMETRAJE -->
+                <div class="form-group full-width" id="boxKm">
+                    <label>Kilometraje del Servicio</label>
+                    <select id="kmServicio">
+                        <option value="">Seleccione KM...</option>
+                    </select>
+                </div>
+
+                <!-- CAJA DIAGNÓSTICO (Oculta por defecto) -->
+                <div class="form-group full-width" id="boxDiag" style="display: none;">
+                    <label>Descripción de Falla / Reparación Solicitada</label>
+                    <textarea id="descDiagnostico" rows="3"
+                        placeholder="Ej. El cliente reporta ruido en la suspensión trasera al pasar baches..."
+                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; resize: vertical; font-family: inherit;"></textarea>
+                </div>
+
+                <div class="form-group full-width precio-display" id="precioEstimadoDisplay"></div>
+
+                <div class="form-group">
+                    <label>Fecha de la Cita</label>
+                    <input type="text" id="fechaCita" placeholder="Seleccione una fecha..." required
+                        style="background: white;">
+                </div>
+                <div class="form-group"><label>Hora de la Cita</label><select id="horaCita" required>
+                        <option value="">Seleccione fecha primero...</option>
+                    </select></div>
+
+                <div class="form-group full-width" style="display: flex; gap: 15px; margin-top: 15px;">
+                    <button type="submit" id="btnPDF" class="btn-primary" style="flex: 1;">Guardar Cita (PDF)</button>
+                    <button type="submit" id="btnWhatsApp" class="btn-whatsapp" style="flex: 1;">Guardar y enviar
+                        Whats</button>
+                </div>
+            </form>
+        </main>
+
+        <!-- PANEL DERECHO (Resumen de Agenda) -->
+        <aside class="right-panel glass-card">
+            <h3>Agenda Activa de la Marca</h3>
+            <div id="listaCitasPanel">
+                <p style="font-size:13px; color:gray;">Cargando agenda...</p>
+            </div>
+        </aside>
+    </div>
+
+    <!-- MODAL DINÁMICO (Uiverse) -->
+    <div id="customModal" class="modal-overlay">
+        <div id="modalCard" class="modal-card">
+            <div class="header">
+                <div class="image" id="modalIcon"></div>
+                <div class="title" id="modalTitle">Atención</div>
+                <p class="message" id="modalMessage">Mensaje</p>
+            </div>
+            <div class="actions">
+                <button id="modalBtnConfirm" class="btn-confirm">Aceptar</button>
+                <button id="modalBtnCancel" class="btn-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PLANTILLA PRE-PICKING (PDF) - MUESTRA DESCRIPCIÓN COMPLETA -->
+    <div id="prepickingPlantilla"
+        style="display:none; padding: 30px; font-family: Arial, sans-serif; background: white;">
+        <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">Orden de Trabajo /
+            Pre-picking: <span id="prepFecha"></span></h2>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 12px; text-align: left;">
+            <thead>
+                <tr style="background-color: #f3f4f6;">
+                    <th style="padding: 10px; border: 1px solid #000; width: 8%;">Hora</th>
+                    <th style="padding: 10px; border: 1px solid #000; width: 22%;">Cliente / Vehículo</th>
+                    <th style="padding: 10px; border: 1px solid #000; width: 45%;">Detalle del Servicio / Falla</th>
+                    <th style="padding: 10px; border: 1px solid #000; width: 15%;">VIN</th>
+                    <th style="padding: 10px; border: 1px solid #000; width: 10%;">Costo Est.</th>
+                </tr>
+            </thead>
+            <tbody id="prepTablaBody"></tbody>
+        </table>
+    </div>
+
+    <!-- PLANTILLA TICKET PDF -->
+    <div id="ticketImpresion"
+        style="display:none; padding: 40px; background: white; font-family: Arial, sans-serif; color: black;">
+        <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
+            <h1 id="tkMarca" style="margin: 0; font-size: 24px;">AGENCIA</h1>
+            <p style="margin: 0; font-size: 14px;">Coatzacoalcos, Veracruz</p>
+            <h2>CONFIRMACIÓN DE CITA</h2>
+        </div>
+        <p><strong>Cliente:</strong> <span id="tkCliente"></span></p>
+        <p><strong>VIN:</strong> <span id="tkVin"></span></p>
+        <p><strong>Vehículo:</strong> <span id="tkModelo"></span></p>
+        <p><strong>Tipo Ingreso:</strong> <span id="tkTipo"></span></p>
+        <p><strong>Detalle:</strong> <span id="tkDetalle"></span></p>
+        <p><strong>Fecha:</strong> <span id="tkFecha"></span></p>
+        <p><strong>Hora:</strong> <span id="tkHora"></span></p><br>
+        <h3 style="text-align: right;">Costo Estimado: <span id="tkCosto"></span></h3>
+    </div>
+
+    <script type="module" src="js/app_citas.js"></script>
+</body>
+
+</html>

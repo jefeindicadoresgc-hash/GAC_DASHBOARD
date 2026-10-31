@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMS - Portal de Técnico</title>
+
+    <link rel="stylesheet" href="css/global.css">
+
+    <!-- Estilos específicos para el semáforo del checklist -->
+    <style>
+        .semaforo-select {
+            font-weight: 700;
+            transition: all 0.3s;
+        }
+
+        .estado-verde {
+            background-color: rgba(22, 163, 74, 0.2) !important;
+            color: #15803d !important;
+            border-color: #16a34a !important;
+        }
+
+        .estado-amarillo {
+            background-color: rgba(217, 119, 6, 0.2) !important;
+            color: #b45309 !important;
+            border-color: #d97706 !important;
+        }
+
+        .estado-rojo {
+            background-color: rgba(220, 38, 38, 0.2) !important;
+            color: #b91c1c !important;
+            border-color: #dc2626 !important;
+        }
+
+        .estado-gris {
+            background-color: rgba(100, 116, 139, 0.2) !important;
+            color: #475569 !important;
+            border-color: #64748b !important;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--primary-color);
+            margin: 25px 0 10px;
+            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+            padding-bottom: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="layout" id="appLayout">
+
+        <!-- BARRA LATERAL -->
+        <aside class="sidebar glass-card">
+            <div>
+                <div class="brand-logo" id="uiBrandName">DMS TALLER</div>
+                <div class="nav-menu">
+                    <div class="nav-item active">🔧 Inspección 25 Pts</div>
+                </div>
+            </div>
+            <div class="sidebar-footer">
+                <p style="font-weight: bold; margin-bottom: 5px;">Área Técnica</p>
+                <a href="index.html" style="color: #ef4444; text-decoration: none; font-weight: 600;"
+                    onclick="localStorage.clear()">Cerrar Sesión</a>
+            </div>
+        </aside>
+
+        <!-- CONTENIDO PRINCIPAL -->
+        <main class="main-content glass-card">
+            <h2>Inspección Visual Multipuntos</h2>
+            <p class="subtitle">Complete el checklist de la unidad en servicio.</p>
+
+            <form id="formChecklist" style="max-width: 800px; margin: 0 auto; width: 100%;">
+
+                <!-- DATOS DE LA ORDEN -->
+                <div class="form-grid"
+                    style="background: rgba(255,255,255,0.4); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
+                    <div class="form-group full-width">
+                        <label>No. de Orden (Obligatorio)</label>
+                        <input type="text" id="orden" placeholder="Ej. OR-12345" required
+                            style="text-transform: uppercase; font-weight: bold; font-size: 16px;">
+                    </div>
+                    <div class="form-group full-width">
+                        <label>Modelo del Vehículo</label>
+                        <select id="modelo" required style="font-weight: bold; font-size: 16px;">
+                            <option value="">Seleccione el vehículo...</option>
+                            <!-- Se llena dinámicamente con app_tecnico.js -->
+                        </select>
+                    </div>
+                </div>
+
+                <!-- CONTENEDOR CHECKLIST (Se genera con JS) -->
+                <div id="contenedor-puntos"></div>
+
+                <!-- FRENOS Y LLANTAS -->
+                <h3 class="section-title">Frenos (Grosor en mm)</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Delantero Izquierdo</label><input type="number" step="0.1"
+                            id="freno_del_izq" placeholder="mm"></div>
+                    <div class="form-group"><label>Delantero Derecho</label><input type="number" step="0.1"
+                            id="freno_del_der" placeholder="mm"></div>
+                    <div class="form-group"><label>Trasero Izquierdo</label><input type="number" step="0.1"
+                            id="freno_tra_izq" placeholder="mm"></div>
+                    <div class="form-group"><label>Trasero Derecho</label><input type="number" step="0.1"
+                            id="freno_tra_der" placeholder="mm"></div>
+                </div>
+
+                <h3 class="section-title">Llantas (Presión en PSI)</h3>
+                <div class="form-grid">
+                    <div class="form-group"><label>Delantera Izquierda</label><input type="number" step="1"
+                            id="llanta_del_izq" placeholder="PSI"></div>
+                    <div class="form-group"><label>Delantera Derecha</label><input type="number" step="1"
+                            id="llanta_del_der" placeholder="PSI"></div>
+                    <div class="form-group"><label>Trasera Izquierda</label><input type="number" step="1"
+                            id="llanta_tra_izq" placeholder="PSI"></div>
+                    <div class="form-group"><label>Trasera Derecha</label><input type="number" step="1"
+                            id="llanta_tra_der" placeholder="PSI"></div>
+                </div>
+
+                <!-- COMENTARIOS Y GUARDAR -->
+                <h3 class="section-title">Notas del Técnico</h3>
+                <div class="form-group">
+                    <textarea id="comentarios" rows="3" placeholder="Observaciones, daños encontrados, sugerencias..."
+                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; resize: vertical; font-family: inherit; margin-bottom: 20px;"></textarea>
+                </div>
+
+                <button type="submit" id="btnGuardar" class="btn-primary" style="font-size: 16px; padding: 18px;">💾
+                    GUARDAR REPORTE DE INSPECCIÓN</button>
+            </form>
+        </main>
+    </div>
+
+    <!-- MODAL DINÁMICO (El mismo sistema de alertas elegantes) -->
+    <div id="customModal" class="modal-overlay">
+        <div id="modalCard" class="modal-card">
+            <div class="header">
+                <div class="image" id="modalIcon"></div>
+                <div class="title" id="modalTitle">Atención</div>
+                <p class="message" id="modalMessage">Mensaje</p>
+            </div>
+            <div class="actions">
+                <button id="modalBtnConfirm" class="btn-confirm">Aceptar</button>
+                <button id="modalBtnCancel" class="btn-cancel">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app_tecnico.js"></script>
+</body>
+
+</html>

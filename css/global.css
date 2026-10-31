@@ -1,15 +1,18 @@
-/* Importar fuente Inter (estilo similar a San Francisco de Apple) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-    --bg-color: #F5F7FA;
-    --card-bg: #FFFFFF;
-    --text-main: #1D1D1F; 
-    --text-muted: #86868B;
-    --primary-color: #000000; /* Botones negros */
-    --primary-hover: #333333; /* Gris oscuro al interactuar */
-    --border-color: #E5E5EA;
-    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+    --bg-gradient: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+    --glass-bg: rgba(255, 255, 255, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.4);
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+    --glass-blur: blur(12px);
+
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --primary-color: #0f172a;
+    --primary-hover: #334155;
+    --accent-gwm: #0066CC;
+    --accent-gac: #dc2626;
 }
 
 * {
@@ -20,41 +23,420 @@
 }
 
 body {
-    background-color: var(--bg-color);
+    background: var(--bg-gradient);
     color: var(--text-main);
+    height: 100vh;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
 }
 
+/* 💎 EFECTO CRISTAL */
+.glass-card {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 16px;
+}
+
+/* ================= LOGIN ================= */
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    padding: 20px;
+}
+
+.login-box {
+    width: 100%;
+    max-width: 420px;
+    padding: 40px;
+    text-align: center;
+}
+
+.login-box h1 {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    margin-bottom: 5px;
+}
+
+.login-box h1 span {
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.login-box p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 30px;
+}
+
+.error-text {
+    color: #ef4444;
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 15px;
+    background: rgba(254, 226, 226, 0.8);
+    padding: 8px;
+    border-radius: 6px;
+    display: none;
+}
+
+/* ================= DASHBOARD LAYOUT ================= */
+.layout {
+    display: flex;
+    height: 100vh;
+    padding: 15px;
+    gap: 15px;
+}
+
+/* Barra Lateral */
+.sidebar {
+    width: 250px;
+    padding: 25px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.brand-logo {
+    font-size: 18px;
+    font-weight: 800;
+    margin-bottom: 40px;
+    text-align: center;
+    letter-spacing: 1px;
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.nav-item {
+    padding: 12px 16px;
+    border-radius: 10px;
+    color: var(--text-main);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.nav-item:hover {
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.nav-item.active {
+    background: var(--primary-color);
+    color: white;
+}
+
+.sidebar-footer {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+}
+
+/* Contenido Principal */
+.main-content {
+    flex: 1;
+    padding: 35px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content h2 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 25px;
+}
+
+/* Panel Derecho */
+.right-panel {
+    width: 320px;
+    padding: 25px 20px;
+    overflow-y: auto;
+}
+
+.right-panel h3 {
+    font-size: 16px;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+.cita-card {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid var(--glass-border);
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    font-size: 13px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+}
+
+.cita-card strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 14px;
+}
+
+.indicador-laboral {
+    background: var(--primary-color);
+    color: white;
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+    font-size: 13px;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+/* ================= FORMULARIOS ================= */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.form-group label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.full-width {
+    grid-column: span 2;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-main);
+    outline: none;
+    transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
+}
+
+/* Toggle de Marcas */
+.brand-toggle {
+    display: flex;
+    gap: 10px;
+    background: rgba(255, 255, 255, 0.5);
+    padding: 5px;
+    border-radius: 12px;
+    width: max-content;
+    margin-bottom: 20px;
+}
+
+.toggle-btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    transition: 0.3s;
+}
+
+.toggle-btn.active-gwm {
+    background: var(--accent-gwm);
+    color: white;
+}
+
+.toggle-btn.active-gac {
+    background: var(--accent-gac);
+    color: white;
+}
+
+/* Botones */
 .btn-primary {
     background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 8px; /* Bordes redondeados sutiles */
+    padding: 14px 24px;
+    border-radius: 10px;
     font-size: 14px;
-    font-weight: 500;
+    font-weight: 600;
     cursor: pointer;
-    transition: all 0.2s ease;
     width: 100%;
+    transition: all 0.2s ease;
 }
 
 .btn-primary:hover {
     background-color: var(--primary-hover);
-    transform: translateY(-1px);
+    transform: translateY(-2px);
 }
 
-input, select {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
+.btn-whatsapp {
+    background-color: #25D366;
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 10px;
     font-size: 14px;
-    outline: none;
-    transition: border 0.2s;
-    background-color: #FAFAFA;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+    transition: all 0.2s ease;
 }
 
-input:focus, select:focus {
-    border-color: var(--primary-color);
-    background-color: #FFF;
+.btn-whatsapp:hover {
+    background-color: #1EBE57;
+    transform: translateY(-2px);
+}
+
+.precio-display {
+    font-size: 18px;
+    font-weight: 700;
+    color: #16a34a;
+    text-align: center;
+    padding: 15px;
+    background: rgba(220, 252, 231, 0.7);
+    border-radius: 10px;
+    display: none;
+    border: 1px solid #bbf7d0;
+}
+
+/* ================= MODALES Y TICKETS ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 16px;
+    max-width: 320px;
+    width: 100%;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+.modal-card .header {
+    padding: 25px 20px 15px;
+    text-align: center;
+}
+
+.modal-card .image {
+    display: flex;
+    margin: 0 auto 15px;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
+
+.modal-card .image svg {
+    width: 24px;
+    height: 24px;
+}
+
+.modal-card .title {
+    color: #1e293b;
+    font-size: 18px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.modal-card .message {
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.modal-card .actions {
+    padding: 15px 20px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.modal-card button {
+    padding: 12px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+
+.modal-card .btn-cancel {
+    background: white;
+    border: 1px solid #e2e8f0;
+    color: #475569;
+    display: none;
+}
+
+.modal-card.error .image {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.modal-card.error .btn-confirm {
+    background: #dc2626;
+    color: white;
+}
+
+.modal-card.success .image {
+    background: #dcfce7;
+    color: #16a34a;
+}
+
+.modal-card.success .btn-confirm {
+    background: #16a34a;
+    color: white;
+}
+
+.modal-card.warning .image {
+    background: #fef3c7;
+    color: #d97706;
+}
+
+.modal-card.warning .btn-confirm {
+    background: #d97706;
+    color: white;
 }
