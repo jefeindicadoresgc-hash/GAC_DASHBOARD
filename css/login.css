@@ -1,0 +1,41 @@
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.login-box {
+    background-color: var(--card-bg);
+    padding: 40px;
+    border-radius: 20px; /* Borde más redondeado tipo Mac/iOS */
+    box-shadow: var(--shadow-soft);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-box h2 {
+    font-size: 24px;
+    margin-bottom: 8px;
+}
+
+.login-box h2 span {
+    color: var(--primary-color);
+}
+
+.login-box p {
+    color: var(--text-muted);
+    font-size: 14px;
+    margin-bottom: 24px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.error-text {
+    color: #FF3B30; /* Rojo Apple */
+    margin-top: 12px;
+    font-size: 13px;
+}

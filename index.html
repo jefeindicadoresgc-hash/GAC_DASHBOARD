@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DMS Citas - Login</title>
+    <link rel="stylesheet" href="css/global.css">
+    <link rel="stylesheet" href="css/login.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-box">
+            <!-- El logo cambiará dinámicamente si queremos, por ahora uno genérico o texto -->
+            <h2>DMS <span>Service</span></h2>
+            <p>Ingresa tu código de acceso corporativo</p>
+            
+            <div class="input-group">
+                <input type="password" id="loginCode" placeholder="Ej. GAC1" maxlength="4" autocomplete="off">
+            </div>
+            
+            <button id="btnLogin" class="btn-primary">Acceder al Sistema</button>
+            <p id="errorMsg" class="error-text" style="display: none;">Código incorrecto.</p>
+        </div>
+    </div>
+
+    <!-- Script temporal para simular el login y pasar al dashboard -->
+    <script>
+        document.getElementById('btnLogin').addEventListener('click', () => {
+            const code = document.getElementById('loginCode').value.toUpperCase();
+            if(code === 'GWM1' || code === 'GAC1') {
+                // Guardamos quién inició sesión para tematizar el dashboard
+                localStorage.setItem('agencia_activa', code);
+                window.location.href = 'dashboard.html';
+            } else {
+                document.getElementById('errorMsg').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>

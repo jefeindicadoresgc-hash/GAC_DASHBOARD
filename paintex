@@ -1,0 +1,15 @@
+/dms-citas
+  ├── index.html               (Tu pantalla de Login)
+  ├── dashboard.html           (El tablero principal de citas)
+  ├── /css
+  │    ├── global.css          (Variables de colores tipo Apple, tipografías)
+  │    ├── login.css           (Estilos exclusivos del login)
+  │    └── dashboard.css       (Estilos del sidebar tipo la foto y formulario)
+  ├── /js
+  │    ├── firebase-config.js  (Credenciales de tu BD)
+  │    ├── auth.js             (Lógica de los accesos de 4 letras)
+  │    ├── data.js             (Aquí meteremos los arrays con los precios de tus Excel)
+  │    └── app.js              (Lógica de las citas, calendario y renderizado)
+  └── /assets
+       ├── /img                (Logos de GWM y GAC)
+       └── /icons              (Iconos SVG para el menú lateral)

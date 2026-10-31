@@ -1,0 +1,60 @@
+/* Importar fuente Inter (estilo similar a San Francisco de Apple) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --bg-color: #F5F7FA;
+    --card-bg: #FFFFFF;
+    --text-main: #1D1D1F; 
+    --text-muted: #86868B;
+    --primary-color: #000000; /* Botones negros */
+    --primary-hover: #333333; /* Gris oscuro al interactuar */
+    --border-color: #E5E5EA;
+    --shadow-soft: 0 4px 20px rgba(0, 0, 0, 0.05);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+.btn-primary {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 8px; /* Bordes redondeados sutiles */
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    width: 100%;
+}
+
+.btn-primary:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+input, select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: border 0.2s;
+    background-color: #FAFAFA;
+}
+
+input:focus, select:focus {
+    border-color: var(--primary-color);
+    background-color: #FFF;
+}
