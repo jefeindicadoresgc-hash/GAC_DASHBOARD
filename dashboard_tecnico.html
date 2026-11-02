@@ -4,147 +4,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DMS - Portal de Técnico</title>
-
+    <title>DMS - Bahía Técnica</title>
     <link rel="stylesheet" href="css/global.css">
-
-    <!-- Estilos específicos para el semáforo del checklist -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        .tech-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .tech-card {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .tech-card.en-trabajo {
+            border-left: 5px solid #facc15;
+            background: rgba(254, 252, 232, 0.9);
+        }
+
+        .tech-card.recepcionado {
+            border-left: 5px solid #3b82f6;
+        }
+
+        .tech-card.detenido {
+            border-left: 5px solid #ef4444;
+            opacity: 0.7;
+        }
+
+        .timer-display {
+            font-family: monospace;
+            font-size: 24px;
+            font-weight: 800;
+            text-align: center;
+            margin: 10px 0;
+            background: #0f172a;
+            color: #10b981;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .timer-display.paused {
+            color: #ef4444;
+        }
+
+        .btn-tech {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 5px;
+            font-size: 13px;
+        }
+
+        .btn-iniciar {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-pausar {
+            background: #f59e0b;
+            color: white;
+            display: none;
+        }
+
+        .btn-finalizar {
+            background: #ef4444;
+            color: white;
+            display: none;
+        }
+
+        /* Botón X para cerrar modales */
+        .close-btn {
+            background: transparent;
+            border: none;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            float: right;
+            line-height: 1;
+        }
+
+        .close-btn:hover {
+            color: #ef4444;
+        }
+
+        /* Estilos Semáforo 25 Pts */
         .semaforo-select {
             font-weight: 700;
-            transition: all 0.3s;
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 5px;
+            outline: none;
         }
 
         .estado-verde {
-            background-color: rgba(22, 163, 74, 0.2) !important;
-            color: #15803d !important;
-            border-color: #16a34a !important;
+            background: rgba(22, 163, 74, 0.2);
+            color: #15803d;
+            border: 1px solid #16a34a;
         }
 
         .estado-amarillo {
-            background-color: rgba(217, 119, 6, 0.2) !important;
-            color: #b45309 !important;
-            border-color: #d97706 !important;
+            background: rgba(217, 119, 6, 0.2);
+            color: #b45309;
+            border: 1px solid #d97706;
         }
 
         .estado-rojo {
-            background-color: rgba(220, 38, 38, 0.2) !important;
-            color: #b91c1c !important;
-            border-color: #dc2626 !important;
+            background: rgba(220, 38, 38, 0.2);
+            color: #b91c1c;
+            border: 1px solid #dc2626;
         }
 
         .estado-gris {
-            background-color: rgba(100, 116, 139, 0.2) !important;
-            color: #475569 !important;
-            border-color: #64748b !important;
+            background: rgba(100, 116, 139, 0.2);
+            color: #475569;
+            border: 1px solid #64748b;
         }
 
-        .section-title {
-            font-size: 14px;
-            font-weight: 800;
-            text-transform: uppercase;
-            color: var(--primary-color);
-            margin: 25px 0 10px;
-            border-bottom: 2px solid rgba(0, 0, 0, 0.1);
-            padding-bottom: 5px;
+        .req-asterisk {
+            color: red;
+            font-weight: bold;
+        }
+
+        .dinamic-section {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #cbd5e1;
         }
     </style>
 </head>
 
 <body>
     <div class="layout" id="appLayout">
-
-        <!-- BARRA LATERAL -->
         <aside class="sidebar glass-card">
             <div>
-                <div class="brand-logo" id="uiBrandName">DMS TALLER</div>
+                <div class="brand-logo">TALLER / BAHÍA</div>
                 <div class="nav-menu">
-                    <div class="nav-item active">🔧 Inspección 25 Pts</div>
+                    <div class="nav-item active">🔧 Órdenes Activas</div>
                 </div>
             </div>
             <div class="sidebar-footer">
-                <p style="font-weight: bold; margin-bottom: 5px;">Área Técnica</p>
+                <p style="font-weight: bold; margin-bottom: 5px;">Técnico General</p>
                 <a href="index.html" style="color: #ef4444; text-decoration: none; font-weight: 600;"
                     onclick="localStorage.clear()">Cerrar Sesión</a>
             </div>
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
-        <main class="main-content glass-card">
-            <h2>Inspección Visual Multipuntos</h2>
-            <p class="subtitle">Complete el checklist de la unidad en servicio.</p>
-
-            <form id="formChecklist" style="max-width: 800px; margin: 0 auto; width: 100%;">
-
-                <!-- DATOS DE LA ORDEN -->
-                <div class="form-grid"
-                    style="background: rgba(255,255,255,0.4); padding: 20px; border-radius: 12px; margin-bottom: 20px;">
-                    <div class="form-group full-width">
-                        <label>No. de Orden (Obligatorio)</label>
-                        <input type="text" id="orden" placeholder="Ej. OR-12345" required
-                            style="text-transform: uppercase; font-weight: bold; font-size: 16px;">
-                    </div>
-                    <div class="form-group full-width">
-                        <label>Modelo del Vehículo</label>
-                        <select id="modelo" required style="font-weight: bold; font-size: 16px;">
-                            <option value="">Seleccione el vehículo...</option>
-                            <!-- Se llena dinámicamente con app_tecnico.js -->
-                        </select>
-                    </div>
+        <main class="main-content glass-card" style="flex: 1; max-width: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2>Panel de Control de Tiempos</h2>
+                    <p class="subtitle">Seleccione una orden para validar los detalles e iniciar el cronómetro.</p>
                 </div>
+                <button id="btnRefrescar"
+                    style="background:#0f172a; color:white; border:none; padding:10px 15px; border-radius:8px; cursor:pointer; font-weight:bold;">🔄
+                    Refrescar Tablero</button>
+            </div>
 
-                <!-- CONTENEDOR CHECKLIST (Se genera con JS) -->
-                <div id="contenedor-puntos"></div>
-
-                <!-- FRENOS Y LLANTAS -->
-                <h3 class="section-title">Frenos (Grosor en mm)</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Delantero Izquierdo</label><input type="number" step="0.1"
-                            id="freno_del_izq" placeholder="mm"></div>
-                    <div class="form-group"><label>Delantero Derecho</label><input type="number" step="0.1"
-                            id="freno_del_der" placeholder="mm"></div>
-                    <div class="form-group"><label>Trasero Izquierdo</label><input type="number" step="0.1"
-                            id="freno_tra_izq" placeholder="mm"></div>
-                    <div class="form-group"><label>Trasero Derecho</label><input type="number" step="0.1"
-                            id="freno_tra_der" placeholder="mm"></div>
-                </div>
-
-                <h3 class="section-title">Llantas (Presión en PSI)</h3>
-                <div class="form-grid">
-                    <div class="form-group"><label>Delantera Izquierda</label><input type="number" step="1"
-                            id="llanta_del_izq" placeholder="PSI"></div>
-                    <div class="form-group"><label>Delantera Derecha</label><input type="number" step="1"
-                            id="llanta_del_der" placeholder="PSI"></div>
-                    <div class="form-group"><label>Trasera Izquierda</label><input type="number" step="1"
-                            id="llanta_tra_izq" placeholder="PSI"></div>
-                    <div class="form-group"><label>Trasera Derecha</label><input type="number" step="1"
-                            id="llanta_tra_der" placeholder="PSI"></div>
-                </div>
-
-                <!-- COMENTARIOS Y GUARDAR -->
-                <h3 class="section-title">Notas del Técnico</h3>
-                <div class="form-group">
-                    <textarea id="comentarios" rows="3" placeholder="Observaciones, daños encontrados, sugerencias..."
-                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; resize: vertical; font-family: inherit; margin-bottom: 20px;"></textarea>
-                </div>
-
-                <button type="submit" id="btnGuardar" class="btn-primary" style="font-size: 16px; padding: 18px;">💾
-                    GUARDAR REPORTE DE INSPECCIÓN</button>
-            </form>
+            <div class="tech-grid" id="gridTecnico">
+                <!-- Tarjetas inyectadas por JS -->
+            </div>
         </main>
     </div>
 
-    <!-- MODAL DINÁMICO (El mismo sistema de alertas elegantes) -->
-    <div id="customModal" class="modal-overlay">
-        <div id="modalCard" class="modal-card">
-            <div class="header">
-                <div class="image" id="modalIcon"></div>
-                <div class="title" id="modalTitle">Atención</div>
-                <p class="message" id="modalMessage">Mensaje</p>
+    <!-- MODAL DE VALIDACIÓN Y DETALLES ANTES DE INICIAR -->
+    <div id="modalValidarUnidad" class="modal-overlay">
+        <div class="modal-card" style="max-width: 500px;">
+            <div class="header" style="background: #10b981; color: white; text-align: left; padding: 20px;">
+                <button class="close-btn" id="btnCerrarValidacionX">&times;</button>
+                <h3 style="margin: 0;">Detalle y Validación de Trabajo</h3>
+                <p style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Revise las instrucciones del Asesor y valide
+                    el VIN para iniciar.</p>
             </div>
-            <div class="actions">
-                <button id="modalBtnConfirm" class="btn-confirm">Aceptar</button>
-                <button id="modalBtnCancel" class="btn-cancel">Cancelar</button>
+            <div style="padding: 20px; max-height: 60vh; overflow-y: auto; background: #f8fafc;">
+                <input type="hidden" id="valIdCita">
+
+                <div
+                    style="background:white; padding:15px; border-radius:8px; border:1px solid #cbd5e1; margin-bottom:15px;">
+                    <p style="margin:0; font-size:11px; color:gray; font-weight:bold; text-transform:uppercase;">
+                        Vehículo y Cliente</p>
+                    <h3 id="valVehiculo" style="margin:5px 0 0; color:#0f172a;">--</h3>
+                    <p id="valPlacas" style="margin:0; font-weight:bold; color:#3b82f6;">--</p>
+                </div>
+
+                <div
+                    style="background:#fff7ed; padding:15px; border-radius:8px; border:1px solid #fed7aa; margin-bottom:15px;">
+                    <p style="margin:0; font-size:11px; color:#c2410c; font-weight:bold; text-transform:uppercase;">
+                        Instrucciones del Servicio</p>
+                    <p id="valServicio" style="font-weight:bold; font-size:14px; margin:5px 0;">--</p>
+                    <div id="valNotasAsesor" style="margin-top:10px; font-size:13px; color:#9a3412;"></div>
+                </div>
+
+                <div id="boxVinValidacion"
+                    style="background:white; padding:15px; border-radius:8px; border:2px dashed #94a3b8; text-align:center;">
+                    <p style="margin:0 0 10px; font-size:12px; font-weight:bold; color:#334155;">Para iniciar el reloj,
+                        confirme los <span style="color:#ef4444;">últimos 4 dígitos del VIN</span>:</p>
+                    <input type="text" id="valInputVin" maxlength="4"
+                        style="text-align:center; font-size:24px; letter-spacing:8px; font-weight:bold; text-transform:uppercase; padding:10px; border:2px solid #cbd5e1; border-radius:8px; width:150px; outline:none;">
+                    <p id="valErrorVin"
+                        style="color:#ef4444; font-size:11px; font-weight:bold; margin-top:5px; display:none;">VIN
+                        incorrecto</p>
+                </div>
+            </div>
+            <div class="actions"
+                style="display: flex; gap: 10px; padding: 15px 20px; background:white; border-top:1px solid #e2e8f0;">
+                <button id="btnCancelarValidacion"
+                    style="background: white; border: 1px solid #cbd5e1; flex: 1;">Cancelar</button>
+                <button id="btnConfirmarInicio"
+                    style="background: #10b981; color: white; border: none; flex: 2; opacity:0.5;" disabled>▶ Iniciar
+                    Trabajo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CIERRE CONDICIONAL (MANT, REP, DIAG) -->
+    <div id="modalChecklist" class="modal-overlay">
+        <div class="modal-card" style="max-width: 700px; height: 90vh; display: flex; flex-direction: column;">
+            <div class="header" style="background: #0f172a; color: white; text-align: left; padding: 15px 20px;">
+                <button class="close-btn" id="btnCerrarChecklistX">&times;</button>
+                <h3 style="margin: 0;">Cierre de Orden Técnica</h3>
+                <p style="font-size: 12px; margin-top: 5px; opacity: 0.8;" id="txtAutoInspeccion"></p>
+            </div>
+
+            <div style="padding: 20px; overflow-y: auto; flex: 1; background:#f1f5f9;" id="contenedorChecklist">
+                <!-- Se llena dinámicamente con JS dependiendo de si es Mantenimiento, Reparación o Diagnóstico -->
+            </div>
+
+            <div class="actions" style="background: white; border-top: 1px solid #e2e8f0; padding: 15px 20px;">
+                <button id="btnGuardarInspeccion"
+                    style="background: #16a34a; color: white; border: none; width: 100%; padding:15px; font-size:16px; font-weight:bold; border-radius:8px; cursor:pointer;">💾
+                    GUARDAR Y TERMINAR ORDEN</button>
             </div>
         </div>
     </div>

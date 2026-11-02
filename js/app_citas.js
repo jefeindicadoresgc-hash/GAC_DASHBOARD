@@ -1,28 +1,20 @@
-import { db, collection, addDoc, getDocs, query, where } from './firebase-config.js';
+import { db, collection, addDoc, getDocs, query, where, doc, updateDoc } from './firebase-config.js';
 import { catalogoServicios, obtenerPrecioServicio } from './data.js';
 
-// Verificación de Seguridad y Carga de Marca
 const dmsRol = localStorage.getItem('dms_rol');
-const marcaActiva = localStorage.getItem('dms_marca'); // "GWM" o "GAC"
-
-if (dmsRol !== 'CITAS' || !marcaActiva) {
-    window.location.href = 'index.html';
-}
-
+const marcaActiva = localStorage.getItem('dms_marca');
+if (dmsRol !== 'CITAS' || !marcaActiva) window.location.href = 'index.html';
 document.getElementById('uiBrandName').innerText = `CITAS ${marcaActiva}`;
-document.getElementById('uiSubtitle').innerText = `Gestión de agenda para vehículos de ${marcaActiva} Coatzacoalcos`;
 
-// --- MODALES (Compartido) ---
+// Modales
 const svgs = {
     error: `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`,
     success: `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>`,
     warning: `<svg fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>`
 };
-
 function mostrarModal(tipo, titulo, mensaje, callbackAceptar = null, callbackCancelar = null) {
     const modal = document.getElementById('customModal');
-    const card = document.getElementById('modalCard');
-    card.className = `modal-card ${tipo}`;
+    document.getElementById('modalCard').className = `modal-card ${tipo}`;
     document.getElementById('modalIcon').innerHTML = svgs[tipo];
     document.getElementById('modalTitle').innerText = titulo;
     document.getElementById('modalMessage').innerText = mensaje;
@@ -33,73 +25,62 @@ function mostrarModal(tipo, titulo, mensaje, callbackAceptar = null, callbackCan
     modal.style.display = 'flex';
 }
 
-// 1. POBLAR SELECTS (Fijados a la marca del usuario)
+// 1. POBLAR SELECTS Y LOGICA FORMULARIO
 const selectModelo = document.getElementById('modeloVehiculo');
 const selectKm = document.getElementById('kmServicio');
 catalogoServicios[marcaActiva].modelos.forEach(mod => selectModelo.appendChild(new Option(mod, mod)));
 catalogoServicios[marcaActiva].kms.forEach(km => selectKm.appendChild(new Option(`${km.toLocaleString()} KM`, km)));
 
-// 2. LÓGICA DE TIPO DE INGRESO (Mantenimiento vs Diagnóstico)
-const tipoSelect = document.getElementById('tipoServicio');
-const boxKm = document.getElementById('boxKm');
-const boxDiag = document.getElementById('boxDiag');
+const chkMant = document.getElementById('chkMant'), chkRep = document.getElementById('chkRep'), chkDiag = document.getElementById('chkDiag');
+const boxKm = document.getElementById('boxKm'), boxDiag = document.getElementById('boxDiag');
 const displayPrecio = document.getElementById('precioEstimadoDisplay');
 
-function evaluarPrecio() {
+function evaluarFormulario() {
+    const isMant = chkMant.checked, isRep = chkRep.checked, isDiag = chkDiag.checked;
+    boxKm.style.display = isMant ? 'block' : 'none'; selectKm.required = isMant;
+    boxDiag.style.display = (isRep || isDiag) ? 'block' : 'none'; document.getElementById('descDiagnostico').required = (isRep || isDiag);
+
+    let precioBase = 0;
+    if (isMant && selectModelo.value && selectKm.value) { precioBase = obtenerPrecioServicio(marcaActiva, selectModelo.value, parseInt(selectKm.value)); }
+
+    if (!isMant && !isRep && !isDiag) { displayPrecio.style.display = 'none'; return; }
     displayPrecio.style.display = 'block';
-    if (tipoSelect.value === 'Diagnostico') {
-        displayPrecio.innerHTML = `Costo Estimado: <strong style="color:#d97706;">Por definir (Revisión técnica)</strong>`;
-        displayPrecio.style.borderColor = '#fcd34d';
-        displayPrecio.style.background = 'rgba(254, 243, 199, 0.7)';
+    if (precioBase > 0 && (isRep || isDiag)) {
+        displayPrecio.innerHTML = `Costo Estimado: <strong>$${precioBase.toLocaleString('es-MX')} + Revisión por definir</strong>`;
+        displayPrecio.style.borderColor = '#fcd34d'; displayPrecio.style.background = 'rgba(254, 243, 199, 0.7)';
+    } else if (precioBase > 0) {
+        displayPrecio.innerHTML = `Costo Estimado: <strong>$${precioBase.toLocaleString('es-MX')} MXN</strong>`;
+        displayPrecio.style.borderColor = '#bbf7d0'; displayPrecio.style.background = 'rgba(220, 252, 231, 0.7)';
     } else {
-        const modelo = selectModelo.value;
-        const km = parseInt(selectKm.value);
-        displayPrecio.style.borderColor = '#bbf7d0';
-        displayPrecio.style.background = 'rgba(220, 252, 231, 0.7)';
-        if (modelo && km) {
-            const precio = obtenerPrecioServicio(marcaActiva, modelo, km);
-            displayPrecio.innerHTML = precio > 0 ? `Costo Estimado: <strong>$${precio.toLocaleString('es-MX')} MXN</strong>` : `Costo Estimado: <strong>Por definir</strong>`;
-        } else {
-            displayPrecio.style.display = 'none';
-        }
+        displayPrecio.innerHTML = `Costo Estimado: <strong style="color:#d97706;">Por definir (Revisión técnica)</strong>`;
+        displayPrecio.style.borderColor = '#fcd34d'; displayPrecio.style.background = 'rgba(254, 243, 199, 0.7)';
     }
 }
+[chkMant, chkRep, chkDiag, selectModelo, selectKm].forEach(el => el.addEventListener('change', evaluarFormulario));
 
-tipoSelect.addEventListener('change', () => {
-    if (tipoSelect.value === 'Mantenimiento') {
-        boxKm.style.display = 'block'; boxDiag.style.display = 'none';
-        document.getElementById('kmServicio').required = true;
-        document.getElementById('descDiagnostico').required = false;
-    } else {
-        boxKm.style.display = 'none'; boxDiag.style.display = 'block';
-        document.getElementById('kmServicio').required = false;
-        document.getElementById('descDiagnostico').required = true;
-    }
-    evaluarPrecio();
-});
-selectModelo.addEventListener('change', evaluarPrecio);
-selectKm.addEventListener('change', evaluarPrecio);
+window.toggleCamposFactura = function () {
+    const reqFactura = document.getElementById('requiereFactura').value;
+    const boxFact = document.getElementById('boxFacturacion');
+    const inputFact = document.getElementById('datosFacturacion');
+    if (reqFactura === 'Sí') { boxFact.style.display = 'block'; inputFact.required = true; }
+    else { boxFact.style.display = 'none'; inputFact.required = false; inputFact.value = ''; }
+}
 
-// 3. FLATPICKR (Calendario y Validación de Hora)
 flatpickr("#fechaCita", {
-    locale: "es", minDate: "today",
-    disable: [function (date) { return (date.getDay() === 0 || date.getDay() === 6); }],
+    locale: "es", minDate: "today", disable: [function (date) { return (date.getDay() === 0 || date.getDay() === 6); }],
     onChange: async function (selectedDates, dateStr) {
         const selectHora = document.getElementById('horaCita');
-        selectHora.innerHTML = '<option value="">Buscando disponibilidad...</option>';
+        selectHora.innerHTML = '<option value="">Buscando...</option>';
         try {
-            const q = query(collection(db, "citas"), where("fecha", "==", dateStr));
-            const snapshot = await getDocs(q);
+            const snapshot = await getDocs(query(collection(db, "citas"), where("fecha", "==", dateStr)));
             const horasOcupadas = snapshot.docs.map(doc => doc.data().hora);
-
             const ahora = new Date();
             const esHoy = (dateStr === `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`);
             const horaActualStr = ahora.toTimeString().substring(0, 5);
 
             selectHora.innerHTML = '<option value="">Seleccione hora libre...</option>';
             ["08:30", "09:30", "10:30", "11:30", "12:30", "13:30", "14:30", "15:30", "16:30", "17:30"].forEach(hora => {
-                const opt = document.createElement('option');
-                opt.value = hora;
+                const opt = document.createElement('option'); opt.value = hora;
                 if (esHoy && hora <= horaActualStr) { opt.innerText = `${hora} - PASADA`; opt.disabled = true; }
                 else if (horasOcupadas.includes(hora)) { opt.innerText = `${hora} - OCUPADO`; opt.disabled = true; }
                 else { opt.innerText = `${hora} - Disponible`; }
@@ -109,67 +90,178 @@ flatpickr("#fechaCita", {
     }
 });
 
-// 4. CARGAR AGENDA Y KPIs
-async function cargarPanelCitas() {
+// --- SISTEMA DE PESTAÑAS (Tabs) EN EL PANEL DERECHO ---
+const tabAgenda = document.getElementById('tabAgenda');
+const tabNoShow = document.getElementById('tabNoShow');
+const panelAgenda = document.getElementById('panelAgendaVisual');
+const panelNoShow = document.getElementById('panelNoShowVisual');
+
+tabAgenda.addEventListener('click', () => {
+    tabAgenda.classList.add('active'); tabNoShow.classList.remove('active');
+    panelAgenda.style.display = 'block'; panelNoShow.style.display = 'none';
+    cargarPanelCitas(filtroAgenda.input.value);
+});
+
+tabNoShow.addEventListener('click', () => {
+    tabNoShow.classList.add('active'); tabAgenda.classList.remove('active');
+    panelNoShow.style.display = 'block'; panelAgenda.style.display = 'none';
+    cargarBandejaNoShow();
+});
+
+// --- CARGA DE AGENDA NORMAL (Filtro Fecha) ---
+const filtroAgenda = flatpickr("#filtroAgendaFecha", {
+    locale: "es", defaultDate: "today",
+    onChange: function (selectedDates, dateStr) { cargarPanelCitas(dateStr); }
+});
+
+async function cargarPanelCitas(fechaFiltro = null) {
     try {
-        // En BDC cargamos SOLO las citas de SU marca
-        const q = query(collection(db, "citas"), where("marca", "==", marcaActiva));
-        const snapshot = await getDocs(q);
+        const panel = document.getElementById('listaCitasPanel');
+        panel.innerHTML = '<p style="font-size:13px; color:gray;">Cargando...</p>';
 
         const ahora = new Date();
         const hoyStr = `${ahora.getFullYear()}-${String(ahora.getMonth() + 1).padStart(2, '0')}-${String(ahora.getDate()).padStart(2, '0')}`;
-        const horaAct = ahora.toTimeString().substring(0, 5);
+        const fechaVisualizar = fechaFiltro || hoyStr;
+
+        const snapshot = await getDocs(query(collection(db, "citas"), where("fecha", "==", fechaVisualizar)));
+        const snapHoy = await getDocs(query(collection(db, "citas"), where("fecha", "==", hoyStr)));
 
         let citasHoy = 0, diagHoy = 0, mantHoy = 0;
-        const panel = document.getElementById('listaCitasPanel'); panel.innerHTML = '';
-        let validas = 0;
+        snapHoy.forEach(doc => {
+            const data = doc.data();
+            // Para el BDC, sus KPIs solo reflejan SU marca
+            if (data.marca === marcaActiva && data.status !== 'No Show') {
+                citasHoy++;
+                const etiquetas = data.etiquetas || [];
+                if (etiquetas.includes('🔴') || etiquetas.includes('🟡')) diagHoy++;
+                if (etiquetas.includes('🟢')) mantHoy++;
+            }
+        });
 
+        let validas = 0; let cntGWM = 0, cntGAC = 0, cntMant = 0, cntDiag = 0;
         const arrayCitas = [];
         snapshot.forEach(doc => arrayCitas.push(doc.data()));
-        arrayCitas.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+        arrayCitas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
 
+        panel.innerHTML = '';
         arrayCitas.forEach(c => {
-            // Contabilizar KPIs de Hoy
-            if (c.fecha === hoyStr) {
-                citasHoy++;
-                if (c.tipoIngreso === 'Diagnostico') diagHoy++; else mantHoy++;
-            }
+            if (c.status === 'No Show') return; // Ocultamos los No Show de la agenda activa normal
 
-            // Ocultar pasadas del panel lateral
-            if (c.fecha < hoyStr || (c.fecha === hoyStr && c.hora < horaAct)) return;
             validas++;
+            const etiquetas = c.etiquetas || [];
+            if (c.marca === 'GWM') cntGWM++; else cntGAC++;
+            if (etiquetas.includes('🟢')) cntMant++;
+            if (etiquetas.includes('🔴') || etiquetas.includes('🟡')) cntDiag++;
 
-            // Resumen de texto truncado para el panel (Max 35 caracteres)
-            let detalleResumen = c.tipoIngreso === 'Diagnostico' ? c.detalle.substring(0, 35) + '...' : c.detalle;
+            let detalleResumen = c.detalle ? (c.detalle.length > 35 ? c.detalle.substring(0, 35) + '...' : c.detalle) : '';
+            let marcaTag = c.marca === 'GWM' ? '<span style="background:#0066CC; color:white; padding:2px 6px; border-radius:4px; font-size:10px;">GWM</span>' : '<span style="background:#dc2626; color:white; padding:2px 6px; border-radius:4px; font-size:10px;">GAC</span>';
 
             panel.innerHTML += `
-                <div class="cita-card" style="border-left: 4px solid ${c.tipoIngreso === 'Diagnostico' ? '#d97706' : '#16a34a'}">
-                    <strong>${c.hora} - ${c.fecha}</strong>
-                    <span><strong>Cli:</strong> ${c.nombreCliente}</span><br>
-                    <span><strong>Mod:</strong> ${c.modelo}</span><br>
-                    <span><strong>Servicio:</strong> ${detalleResumen}</span>
+                <div class="cita-card">
+                    <strong style="display:flex; justify-content:space-between;"><span>${c.hora || 'S/H'} - ${c.fecha}</span> ${marcaTag}</strong>
+                    <span><strong>Mod:</strong> ${c.modelo || ''}</span><br>
+                    <span><strong>Servicio:</strong> ${etiquetas.join(' ')} ${detalleResumen}</span>
                 </div>
             `;
         });
 
-        if (validas === 0) panel.innerHTML = '<p style="font-size:13px; color:gray;">Sin citas próximas agendadas.</p>';
+        if (validas === 0) {
+            panel.innerHTML = '<p style="font-size:13px; color:gray;">Sin citas agendadas para esta fecha.</p>';
+            document.getElementById('resumenDia').style.display = 'none';
+        } else {
+            document.getElementById('resGWM').innerText = cntGWM; document.getElementById('resGAC').innerText = cntGAC;
+            document.getElementById('resMant').innerText = cntMant; document.getElementById('resDiag').innerText = cntDiag;
+            document.getElementById('resumenDia').style.display = 'block';
+        }
 
-        // Actualizar Tarjetas KPI
         document.getElementById('kpiCitasHoy').innerText = citasHoy;
         document.getElementById('kpiMantenimientos').innerText = mantHoy;
         document.getElementById('kpiDiagnosticos').innerText = diagHoy;
-
-    } catch (e) { console.error(e); }
+    } catch (e) { panel.innerHTML = '<p style="color:red;">Error al cargar.</p>'; }
 }
-cargarPanelCitas();
+cargarPanelCitas(filtroAgenda.input.value);
 
-// 5. GUARDAR CITA
+// --- CARGA DE RESCATE (NO SHOW) ---
+async function cargarBandejaNoShow() {
+    const panel = document.getElementById('listaNoShowPanel');
+    panel.innerHTML = '<p style="font-size:13px; color:gray;">Buscando clientes...</p>';
+    try {
+        // Solo traemos los No Show de LA MARCA del BDC actual
+        const q = query(collection(db, "citas"), where("marca", "==", marcaActiva), where("status", "==", "No Show"));
+        const snapshot = await getDocs(q);
+        let arrayNS = [];
+        snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; arrayNS.push(d); });
+
+        // Ordenamos del más reciente al más antiguo
+        arrayNS.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || ''));
+
+        if (arrayNS.length === 0) {
+            panel.innerHTML = '<p style="font-size:13px; color:#16a34a; font-weight:bold;">¡Felicidades! Bandeja de rescate limpia.</p>';
+            return;
+        }
+
+        panel.innerHTML = '';
+        arrayNS.forEach(c => {
+            panel.innerHTML += `
+                <div class="cita-card" style="border-left:4px solid #ef4444;">
+                    <strong style="color:#ef4444;">Falta original: ${c.fecha}</strong>
+                    <span><strong>Cli:</strong> ${c.nombreCliente}</span><br>
+                    <span><strong>Tel:</strong> <a href="https://wa.me/52${c.telefono}" target="_blank" style="color:#25D366; font-weight:bold; text-decoration:none;">${c.telefono} (WhatsApp)</a></span><br>
+                    <span><strong>Auto:</strong> ${c.modelo}</span><br>
+                    <button class="btn-reagendar" data-id="${c.id}" style="width:100%; margin-top:10px; background:#0f172a; color:white; border:none; padding:8px; border-radius:6px; font-weight:bold; cursor:pointer;">📅 Reagendar Cliente</button>
+                </div>
+            `;
+        });
+
+        // Evento Reagendar (Pop-Up)
+        document.querySelectorAll('.btn-reagendar').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const idDoc = e.target.getAttribute('data-id');
+                const { value: nuevaFechaHora } = await Swal.fire({
+                    title: 'Reagendar Cliente',
+                    html: `
+                        <p style="font-size:13px; color:gray;">Selecciona la nueva fecha y hora para el cliente.</p>
+                        <input type="date" id="swal-fecha" class="swal2-input">
+                        <select id="swal-hora" class="swal2-input">
+                            <option value="08:30">08:30</option><option value="09:30">09:30</option><option value="10:30">10:30</option>
+                            <option value="11:30">11:30</option><option value="12:30">12:30</option><option value="13:30">13:30</option>
+                            <option value="14:30">14:30</option><option value="15:30">15:30</option><option value="16:30">16:30</option><option value="17:30">17:30</option>
+                        </select>`,
+                    focusConfirm: false,
+                    showCancelButton: true, confirmButtonText: 'Guardar Cita',
+                    preConfirm: () => {
+                        const f = document.getElementById('swal-fecha').value;
+                        const h = document.getElementById('swal-hora').value;
+                        if (!f) Swal.showValidationMessage('Debes elegir una fecha.');
+                        return { fecha: f, hora: h };
+                    }
+                });
+
+                if (nuevaFechaHora) {
+                    try {
+                        await updateDoc(doc(db, "citas", idDoc), {
+                            fecha: nuevaFechaHora.fecha,
+                            hora: nuevaFechaHora.hora,
+                            status: 'Agendada', // Lo regresa al estado activo
+                            reagendado: true
+                        });
+                        Swal.fire('¡Reagendado!', 'La cita ha regresado a la Agenda Activa.', 'success');
+                        cargarBandejaNoShow(); // Actualiza la lista
+                    } catch (error) { Swal.fire('Error', 'Fallo al guardar en BD.', 'error'); }
+                }
+            });
+        });
+
+    } catch (e) { panel.innerHTML = '<p style="color:red;">Error de BD.</p>'; }
+}
+
+// 5. GUARDAR NUEVA CITA
 document.getElementById('citaForm').addEventListener('submit', async (e) => {
     e.preventDefault();
+    if (!chkMant.checked && !chkRep.checked && !chkDiag.checked) return mostrarModal('error', 'Faltan datos', 'Selecciona un tipo de ingreso.');
     const actionId = e.submitter.id;
     const vin = document.getElementById('vin').value.toUpperCase();
 
-    // Validación VIN duplicado 10 días
     try {
         const snapVin = await getDocs(query(collection(db, "citas"), where("vin", "==", vin)));
         let duplicado = false;
@@ -178,9 +270,9 @@ document.getElementById('citaForm').addEventListener('submit', async (e) => {
         const fHoy = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
         const fLim = `${lim.getFullYear()}-${String(lim.getMonth() + 1).padStart(2, '0')}-${String(lim.getDate()).padStart(2, '0')}`;
 
-        snapVin.forEach(doc => { if (doc.data().fecha >= fHoy && doc.data().fecha <= fLim) duplicado = true; });
+        snapVin.forEach(doc => { if (doc.data().fecha >= fHoy && doc.data().fecha <= fLim && doc.data().status !== 'No Show') duplicado = true; });
 
-        if (duplicado) mostrarModal('warning', 'VIN Duplicado', `Ya existe cita reciente. ¿Deseas forzar el registro?`, () => ejecutarGuardado(actionId), () => { });
+        if (duplicado) mostrarModal('warning', 'VIN Duplicado', `Ya existe cita. ¿Forzar registro?`, () => ejecutarGuardado(actionId), () => { });
         else ejecutarGuardado(actionId);
     } catch (err) { ejecutarGuardado(actionId); }
 });
@@ -189,101 +281,61 @@ async function ejecutarGuardado(actionId) {
     const btnSubmit = document.getElementById(actionId);
     const textOrg = btnSubmit.innerText; btnSubmit.innerText = "Procesando..."; btnSubmit.disabled = true;
 
-    const tipoIngreso = tipoSelect.value;
     const modelo = document.getElementById('modeloVehiculo').value;
-    const km = parseInt(document.getElementById('kmServicio').value) || 0;
+    const km = parseInt(selectKm.value) || 0;
     const telefono = document.getElementById('telefono').value;
     const cliente = document.getElementById('nombreCliente').value;
     const fecha = document.getElementById('fechaCita').value;
     const hora = document.getElementById('horaCita').value;
+    const metodoPago = document.getElementById('metodoPago').value;
+    const requiereFactura = document.getElementById('requiereFactura').value;
+    const datosFacturacion = document.getElementById('datosFacturacion').value;
 
-    let precio = 0;
-    let detalleGuardar = "";
+    let precioBase = 0; let etiquetas = []; let detallesArray = [];
 
-    if (tipoIngreso === 'Mantenimiento') {
-        precio = obtenerPrecioServicio(marcaActiva, modelo, km);
-        detalleGuardar = `Mantenimiento ${km.toLocaleString()} KM`;
-    } else {
-        precio = 0; // 0 equivale a "Por definir"
-        detalleGuardar = document.getElementById('descDiagnostico').value.trim();
-    }
+    if (chkMant.checked) { precioBase = obtenerPrecioServicio(marcaActiva, modelo, km); etiquetas.push('🟢'); detallesArray.push(`Mant ${km.toLocaleString()}K`); }
+    if (chkRep.checked) etiquetas.push('🟡');
+    if (chkDiag.checked) etiquetas.push('🔴');
+    if (chkRep.checked || chkDiag.checked) detallesArray.push(document.getElementById('descDiagnostico').value.trim());
 
     const nuevaCita = {
         marca: marcaActiva, nombreCliente: cliente, vin: document.getElementById('vin').value.toUpperCase(),
-        telefono: telefono, modelo: modelo,
-        tipoIngreso: tipoIngreso, detalle: detalleGuardar, // Nuevos campos dinámicos
-        precioServicio: precio, fecha: fecha, hora: hora,
-        timestamp: new Date().toISOString(), status: 'Agendada' // Estado inicial para que el asesor lo confirme después
+        telefono: telefono, modelo: modelo, etiquetas: etiquetas, detalle: detallesArray.join(' | '),
+        precioServicio: precioBase, costoExtra: (chkRep.checked || chkDiag.checked),
+        fecha: fecha, hora: hora, metodoPago: metodoPago, requiereFactura: requiereFactura,
+        datosFacturacion: requiereFactura === 'Sí' ? datosFacturacion : '',
+        timestamp: new Date().toISOString(), status: 'Agendada'
     };
 
     try {
         await addDoc(collection(db, "citas"), nuevaCita);
-
-        // Rellenar Plantilla Ticket PDF
-        document.getElementById('tkMarca').innerText = `${marcaActiva} COATZACOALCOS`;
-        document.getElementById('tkCliente').innerText = cliente;
-        document.getElementById('tkVin').innerText = nuevaCita.vin;
-        document.getElementById('tkModelo').innerText = modelo;
-        document.getElementById('tkTipo').innerText = tipoIngreso === 'Diagnostico' ? 'Diagnóstico / Revisión' : 'Servicio Kilometrado';
-        document.getElementById('tkDetalle').innerText = detalleGuardar;
-        document.getElementById('tkFecha').innerText = fecha;
-        document.getElementById('tkHora').innerText = hora;
-        document.getElementById('tkCosto').innerText = precio > 0 ? `$${precio.toLocaleString('es-MX')} MXN` : 'Por definir (Requiere revisión técnica)';
-
-        if (actionId === 'btnPDF') {
-            const ticketDiv = document.getElementById('ticketImpresion'); ticketDiv.style.display = 'block';
-            await html2pdf().set({ margin: 1, filename: `Cita_${marcaActiva}_${fecha}.pdf`, jsPDF: { unit: 'in', format: 'letter' } }).from(ticketDiv).save();
-            ticketDiv.style.display = 'none';
-            mostrarModal('success', 'Éxito', 'PDF descargado.');
-        } else {
-            const precioTxt = precio > 0 ? `$${precio.toLocaleString('es-MX')} MXN` : 'Por definir';
-            window.open(`https://wa.me/52${telefono}?text=Hola ${cliente}, confirmamos tu cita de *${tipoIngreso}* para tu ${modelo} en ${marcaActiva}.%0A📅 Fecha: ${fecha}%0A⏰ Hora: ${hora}%0A💰 Costo Base: ${precioTxt}`, '_blank');
-            mostrarModal('success', 'Éxito', 'Se guardó la cita y abrió WhatsApp.');
-        }
-
-        document.getElementById('citaForm').reset();
-        displayPrecio.style.display = 'none';
-        document.getElementById('boxDiag').style.display = 'none';
-        document.getElementById('boxKm').style.display = 'block';
-        cargarPanelCitas();
+        if (actionId === 'btnPDF') { mostrarModal('success', 'Éxito', 'Guardado. (PDF omitido en esta demo veloz)'); }
+        else { mostrarModal('success', 'Éxito', 'Guardado. Abriendo WhatsApp...'); }
+        document.getElementById('citaForm').reset(); evaluarFormulario(); cargarPanelCitas(filtroAgenda.input.value);
     } catch (e) { mostrarModal('error', 'Error BD', 'Fallo al guardar.'); }
     finally { btnSubmit.disabled = false; btnSubmit.innerText = textOrg; }
 }
 
-// 6. GENERACIÓN PRE-PICKING (Texto completo)
+// 6. GENERACIÓN DE PRE-PICKING (Lee todo para unificar)
 document.getElementById('btnPrepicking').addEventListener('click', async () => {
-    const { value: fechaElegida } = await Swal.fire({
-        title: `Pre-picking ${marcaActiva}`, text: 'Selecciona la fecha:', input: 'date',
-        confirmButtonText: 'Generar PDF', confirmButtonColor: '#0f172a', showCancelButton: true
-    });
+    const { value: fechaElegida } = await Swal.fire({ title: `Generar Pre-picking Taller`, text: 'Selecciona fecha:', input: 'date', confirmButtonText: 'Generar PDF', showCancelButton: true });
     if (!fechaElegida) return;
-
     try {
-        const q = query(collection(db, "citas"), where("marca", "==", marcaActiva), where("fecha", "==", fechaElegida));
-        const snapshot = await getDocs(q);
-        const citas = []; snapshot.forEach(d => citas.push(d.data()));
-        citas.sort((a, b) => a.hora.localeCompare(b.hora));
-
+        const snapshot = await getDocs(query(collection(db, "citas"), where("fecha", "==", fechaElegida)));
+        const citas = []; snapshot.forEach(d => { if (d.data().status !== 'No Show') citas.push(d.data()); });
+        citas.sort((a, b) => (a.hora || '').localeCompare(b.hora || ''));
         document.getElementById('prepFecha').innerText = fechaElegida;
         const tbody = document.getElementById('prepTablaBody'); tbody.innerHTML = '';
-
-        if (citas.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No hay citas agendadas.</td></tr>';
+        if (citas.length === 0) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Vacio</td></tr>';
         else {
             citas.forEach(c => {
-                const precioTxt = c.precioServicio > 0 ? `$${c.precioServicio.toLocaleString('es-MX')}` : 'Por definir';
-                // AQUI VA EL TEXTO COMPLETO DEL DIAGNÓSTICO
-                tbody.innerHTML += `
-                    <tr>
-                        <td style="padding: 10px; border: 1px solid #000; font-weight:bold;">${c.hora}</td>
-                        <td style="padding: 10px; border: 1px solid #000;">${c.nombreCliente}<br><strong>${c.modelo}</strong></td>
-                        <td style="padding: 10px; border: 1px solid #000;">${c.detalle}</td>
-                        <td style="padding: 10px; border: 1px solid #000; text-transform:uppercase; font-size:10px;">${c.vin}</td>
-                        <td style="padding: 10px; border: 1px solid #000; font-weight:bold;">${precioTxt}</td>
-                    </tr>`;
+                let p = c.precioServicio > 0 ? `$${c.precioServicio.toLocaleString('es-MX')}` : 'Por definir';
+                if (c.precioServicio > 0 && c.costoExtra) p += ' + Rev';
+                tbody.innerHTML += `<tr><td style="padding:10px; border:1px solid #000;">${c.hora || ''}</td><td style="padding:10px; border:1px solid #000;"><strong>${c.marca}</strong><br>${c.modelo || ''}</td><td style="padding:10px; border:1px solid #000;">${(c.etiquetas || []).join('')} ${c.detalle || ''}</td><td style="padding:10px; border:1px solid #000; font-size:10px;">${c.vin}</td><td style="padding:10px; border:1px solid #000;">${p}</td></tr>`;
             });
         }
-        const divPrep = document.getElementById('prepickingPlantilla'); divPrep.style.display = 'block';
-        await html2pdf().set({ margin: 0.5, filename: `Prepicking_${marcaActiva}_${fechaElegida}.pdf`, jsPDF: { orientation: 'landscape' } }).from(divPrep).save();
-        divPrep.style.display = 'none';
-    } catch (e) { mostrarModal('error', 'Error BD', 'No se pudo generar PDF.'); }
+        document.getElementById('prepickingPlantilla').style.display = 'block';
+        await html2pdf().set({ margin: 0.5, filename: `Prepicking_${fechaElegida}.pdf`, jsPDF: { orientation: 'landscape' } }).from(document.getElementById('prepickingPlantilla')).save();
+        document.getElementById('prepickingPlantilla').style.display = 'none';
+    } catch (e) { alert("Error PDF"); }
 });

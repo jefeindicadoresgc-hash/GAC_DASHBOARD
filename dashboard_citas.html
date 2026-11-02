@@ -5,10 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DMS Citas - BDC / Call Center</title>
-
     <link rel="stylesheet" href="css/global.css">
-
-    <!-- Librerías Externas -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -16,7 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
-        /* Estilos específicos para los KPI Diarios estilo Glass */
         .kpi-container {
             display: flex;
             gap: 15px;
@@ -53,12 +49,59 @@
         .kpi-card.highlight {
             border-bottom: 4px solid var(--primary-color);
         }
+
+        .resumen-box {
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 12px;
+            font-weight: bold;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .resumen-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+
+        .res-tag {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 11px;
+        }
+
+        /* Estilos Tabs Lateral */
+        .side-tabs {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 15px;
+        }
+
+        .side-tab-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 11px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.5);
+            color: var(--text-muted);
+            transition: 0.3s;
+        }
+
+        .side-tab-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
     </style>
 </head>
 
 <body>
     <div class="layout" id="appLayout">
-        <!-- BARRA LATERAL IZQUIERDA -->
         <aside class="sidebar glass-card">
             <div>
                 <div class="brand-logo" id="uiBrandName">DMS CITAS</div>
@@ -74,25 +117,18 @@
             </div>
         </aside>
 
-        <!-- CONTENIDO PRINCIPAL -->
+        <!-- (AQUÍ VA TODO EL FORMULARIO DE AGENDAR, NO LO TOQUÉ PARA AHORRAR ESPACIO, MANTÉN EL TUYO) -->
         <main class="main-content glass-card">
-
-            <!-- KPI DIARIO (Monitor) -->
+            <!-- Pega el Formulario citaForm que ya tenías del paso anterior -->
             <div class="kpi-container">
-                <div class="kpi-card highlight">
-                    <span class="kpi-title">Citas Agendadas Hoy</span>
-                    <span class="kpi-value" id="kpiCitasHoy">0</span>
-                </div>
-                <div class="kpi-card" style="border-bottom: 4px solid #16a34a;">
-                    <span class="kpi-title">Mantenimientos</span>
-                    <span class="kpi-value" style="color:#16a34a;" id="kpiMantenimientos">0</span>
-                </div>
-                <div class="kpi-card" style="border-bottom: 4px solid #d97706;">
-                    <span class="kpi-title">Diagnósticos</span>
-                    <span class="kpi-value" style="color:#d97706;" id="kpiDiagnosticos">0</span>
-                </div>
+                <div class="kpi-card highlight"><span class="kpi-title">Citas Agendadas Hoy</span><span
+                        class="kpi-value" id="kpiCitasHoy">0</span></div>
+                <div class="kpi-card" style="border-bottom: 4px solid #16a34a;"><span
+                        class="kpi-title">Mantenimientos</span><span class="kpi-value" style="color:#16a34a;"
+                        id="kpiMantenimientos">0</span></div>
+                <div class="kpi-card" style="border-bottom: 4px solid #d97706;"><span class="kpi-title">Diagnósticos /
+                        Rep.</span><span class="kpi-value" style="color:#d97706;" id="kpiDiagnosticos">0</span></div>
             </div>
-
             <h2>Agendar Nuevo Servicio</h2>
             <p class="subtitle" id="uiSubtitle">Gestión exclusiva de citas para marca activa.</p>
 
@@ -103,44 +139,58 @@
                         maxlength="17" pattern=".{17,17}" required style="text-transform: uppercase;"></div>
                 <div class="form-group"><label>WhatsApp (10 Dígitos)</label><input type="tel" id="telefono"
                         minlength="10" maxlength="10" pattern="\d{10}" required></div>
-                <div class="form-group"><label>Teléfono Alternativo (Opcional)</label><input type="tel" id="telefonoAlt"
+                <div class="form-group"><label>Teléfono Alternativo</label><input type="tel" id="telefonoAlt"
                         minlength="10" maxlength="10" pattern="\d{10}"></div>
+                <div class="form-group"><label>Método de Pago</label><select id="metodoPago" required>
+                        <option value="">Seleccione...</option>
+                        <option value="Efectivo">Efectivo</option>
+                        <option value="Tarjeta">Tarjeta</option>
+                        <option value="Transferencia">Transferencia</option>
+                    </select></div>
                 <div class="form-group"><label>Modelo Vehículo</label><select id="modeloVehiculo" required>
                         <option value="">Seleccione...</option>
                     </select></div>
 
-                <!-- TIPO DE SERVICIO (Controla qué campo se muestra) -->
-                <div class="form-group">
+                <div class="form-group full-width">
                     <label>Tipo de Ingreso</label>
-                    <select id="tipoServicio" required>
-                        <option value="Mantenimiento">Mantenimiento Preventivo (Kilometrado)</option>
-                        <option value="Diagnostico">Diagnóstico / Reparación (Falla)</option>
-                    </select>
+                    <div
+                        style="display: flex; gap: 15px; background: rgba(255,255,255,0.5); padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8);">
+                        <label style="display:flex; align-items:center; gap:5px; font-size:14px; cursor:pointer;"><input
+                                type="checkbox" id="chkMant" value="Mantenimiento" style="width:auto; margin:0;"> 🟢
+                            Mantenimiento</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:14px; cursor:pointer;"><input
+                                type="checkbox" id="chkRep" value="Reparacion" style="width:auto; margin:0;"> 🟡
+                            Reparación</label>
+                        <label style="display:flex; align-items:center; gap:5px; font-size:14px; cursor:pointer;"><input
+                                type="checkbox" id="chkDiag" value="Diagnostico" style="width:auto; margin:0;"> 🔴
+                            Diagnóstico</label>
+                    </div>
                 </div>
 
-                <!-- CAJA KILOMETRAJE -->
-                <div class="form-group full-width" id="boxKm">
-                    <label>Kilometraje del Servicio</label>
-                    <select id="kmServicio">
+                <div class="form-group full-width" id="boxKm" style="display: none;"><label>Kilometraje</label><select
+                        id="kmServicio">
                         <option value="">Seleccione KM...</option>
-                    </select>
+                    </select></div>
+                <div class="form-group full-width" id="boxDiag" style="display: none;"><label>Falla / Reparación
+                        Solicitada</label><textarea id="descDiagnostico" rows="3"
+                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none;"></textarea>
                 </div>
 
-                <!-- CAJA DIAGNÓSTICO (Oculta por defecto) -->
-                <div class="form-group full-width" id="boxDiag" style="display: none;">
-                    <label>Descripción de Falla / Reparación Solicitada</label>
-                    <textarea id="descDiagnostico" rows="3"
-                        placeholder="Ej. El cliente reporta ruido en la suspensión trasera al pasar baches..."
-                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none; resize: vertical; font-family: inherit;"></textarea>
+                <div class="form-group full-width"><label>¿Requiere factura?</label><select id="requiereFactura"
+                        required onchange="toggleCamposFactura()">
+                        <option value="">Seleccione...</option>
+                        <option value="No">No requiere factura</option>
+                        <option value="Sí">Sí requiere factura</option>
+                    </select></div>
+                <div class="form-group full-width" id="boxFacturacion" style="display: none;"><label>Datos de
+                        Facturación</label><textarea id="datosFacturacion" rows="2"
+                        style="width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.8); background: rgba(255,255,255,0.5); outline: none;"></textarea>
                 </div>
 
                 <div class="form-group full-width precio-display" id="precioEstimadoDisplay"></div>
 
-                <div class="form-group">
-                    <label>Fecha de la Cita</label>
-                    <input type="text" id="fechaCita" placeholder="Seleccione una fecha..." required
-                        style="background: white;">
-                </div>
+                <div class="form-group"><label>Fecha de la Cita</label><input type="text" id="fechaCita"
+                        placeholder="Seleccione fecha..." required style="background: white;"></div>
                 <div class="form-group"><label>Hora de la Cita</label><select id="horaCita" required>
                         <option value="">Seleccione fecha primero...</option>
                     </select></div>
@@ -153,16 +203,49 @@
             </form>
         </main>
 
-        <!-- PANEL DERECHO (Resumen de Agenda) -->
+        <!-- PANEL DERECHO (Pestañas) -->
         <aside class="right-panel glass-card">
-            <h3>Agenda Activa de la Marca</h3>
-            <div id="listaCitasPanel">
-                <p style="font-size:13px; color:gray;">Cargando agenda...</p>
+            <div class="side-tabs">
+                <button class="side-tab-btn active" id="tabAgenda">📅 AGENDA HOY</button>
+                <button class="side-tab-btn" id="tabNoShow" style="color:#ef4444;">❌ RESCATE NO SHOW</button>
+            </div>
+
+            <!-- CONTENEDOR 1: AGENDA -->
+            <div id="panelAgendaVisual">
+                <div style="margin-bottom: 15px;">
+                    <label style="font-size: 11px; font-weight: bold; color: var(--text-muted);">Buscar por
+                        Fecha:</label>
+                    <input type="text" id="filtroAgendaFecha" placeholder="Seleccione fecha..."
+                        style="background: white; padding: 8px; font-size: 13px; width:100%; border-radius:6px; border:none;">
+                </div>
+                <div class="resumen-box" id="resumenDia" style="display: none;">
+                    <div class="resumen-row"><span style="color:#0066CC;">GWM: <span id="resGWM" class="res-tag"
+                                style="background:#0066CC; color:white;">0</span></span><span
+                            style="color:#dc2626;">GAC: <span id="resGAC" class="res-tag"
+                                style="background:#dc2626; color:white;">0</span></span></div>
+                    <div class="resumen-row" style="margin-bottom: 0;"><span style="color:#16a34a;">Mant: <span
+                                id="resMant" class="res-tag"
+                                style="background:#16a34a; color:white;">0</span></span><span
+                            style="color:#d97706;">Rep/Diag: <span id="resDiag" class="res-tag"
+                                style="background:#d97706; color:white;">0</span></span></div>
+                </div>
+                <div id="listaCitasPanel">
+                    <p style="font-size:13px; color:gray;">Cargando agenda...</p>
+                </div>
+            </div>
+
+            <!-- CONTENEDOR 2: NO SHOWS (Rescate BDC) -->
+            <div id="panelNoShowVisual" style="display:none;">
+                <p style="font-size: 11px; color: var(--text-muted); margin-bottom:10px;">Clientes que no asistieron.
+                    Selecciona para reagendar.</p>
+                <div id="listaNoShowPanel">
+                    <p style="font-size:13px; color:gray;">Buscando faltas...</p>
+                </div>
             </div>
         </aside>
     </div>
 
-    <!-- MODAL DINÁMICO (Uiverse) -->
+    <!-- MODALES Y PLANTILLAS OCULTAS -->
     <div id="customModal" class="modal-overlay">
         <div id="modalCard" class="modal-card">
             <div class="header">
@@ -170,14 +253,10 @@
                 <div class="title" id="modalTitle">Atención</div>
                 <p class="message" id="modalMessage">Mensaje</p>
             </div>
-            <div class="actions">
-                <button id="modalBtnConfirm" class="btn-confirm">Aceptar</button>
-                <button id="modalBtnCancel" class="btn-cancel">Cancelar</button>
-            </div>
+            <div class="actions"><button id="modalBtnConfirm" class="btn-confirm">Aceptar</button><button
+                    id="modalBtnCancel" class="btn-cancel">Cancelar</button></div>
         </div>
     </div>
-
-    <!-- PLANTILLA PRE-PICKING (PDF) - MUESTRA DESCRIPCIÓN COMPLETA -->
     <div id="prepickingPlantilla"
         style="display:none; padding: 30px; font-family: Arial, sans-serif; background: white;">
         <h2 style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px;">Orden de Trabajo /
@@ -186,7 +265,7 @@
             <thead>
                 <tr style="background-color: #f3f4f6;">
                     <th style="padding: 10px; border: 1px solid #000; width: 8%;">Hora</th>
-                    <th style="padding: 10px; border: 1px solid #000; width: 22%;">Cliente / Vehículo</th>
+                    <th style="padding: 10px; border: 1px solid #000; width: 22%;">Marca / Vehículo</th>
                     <th style="padding: 10px; border: 1px solid #000; width: 45%;">Detalle del Servicio / Falla</th>
                     <th style="padding: 10px; border: 1px solid #000; width: 15%;">VIN</th>
                     <th style="padding: 10px; border: 1px solid #000; width: 10%;">Costo Est.</th>
@@ -195,8 +274,6 @@
             <tbody id="prepTablaBody"></tbody>
         </table>
     </div>
-
-    <!-- PLANTILLA TICKET PDF -->
     <div id="ticketImpresion"
         style="display:none; padding: 40px; background: white; font-family: Arial, sans-serif; color: black;">
         <div style="text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px;">
